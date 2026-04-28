@@ -5,9 +5,7 @@ struct ContentView: View {
 
     var body: some View {
         if api.serverURL.isEmpty || api.apiKey.isEmpty {
-            NavigationStack {
-                SettingsView(api: api, isInitialSetup: true)
-            }
+            SettingsView(api: api, isInitialSetup: true)
         } else {
             TabView {
                 NodesView(api: api)

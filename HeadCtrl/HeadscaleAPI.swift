@@ -10,7 +10,7 @@ class HeadscaleAPI {
     }
 
     init() {
-        serverURL = UserDefaults.standard.string(forKey: "headctrl.serverURL") ?? ""
+        serverURL = UserDefaults.standard.string(forKey: "headctrl.serverURL") ?? "https://hs.blacktank.org"
         apiKey = UserDefaults.standard.string(forKey: "headctrl.apiKey") ?? ""
     }
 
