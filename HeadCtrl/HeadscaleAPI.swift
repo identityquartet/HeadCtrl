@@ -58,17 +58,6 @@ class HeadscaleAPI {
         _ = try await request("/user/\(name)", method: "DELETE")
     }
 
-    // MARK: Routes
-    func listRoutes() async throws -> [HeadscaleRoute] {
-        try JSONDecoder().decode(RouteListResponse.self, from: try await request("/routes")).routes
-    }
-    func enableRoute(_ id: String) async throws {
-        _ = try await request("/routes/\(id)/enable", method: "POST")
-    }
-    func deleteRoute(_ id: String) async throws {
-        _ = try await request("/routes/\(id)", method: "DELETE")
-    }
-
     // MARK: API Keys
     func listAPIKeys() async throws -> [HeadscaleAPIKey] {
         try JSONDecoder().decode(APIKeyListResponse.self, from: try await request("/apikey")).apiKeys

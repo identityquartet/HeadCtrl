@@ -2,23 +2,36 @@ import SwiftUI
 
 struct RoutesView: View {
     let api: HeadscaleAPI
-    @State private var routes: [HeadscaleRoute] = []
+    @State private var nodes: [HeadscaleNode] = []
     @State private var isLoading = false
     @State private var error: String?
+
+    var routes: [RouteEntry] {
+        var entries: [RouteEntry] = []
+        for node in nodes {
+            for prefix in node.availableRoutes {
+                let approved = node.approvedRoutes.contains(prefix)
+                entries.append(RouteEntry(id: "\(node.id)-\(prefix)", node: node,
+                                         prefix: prefix, approved: approved))
+            }
+        }
+        return entries.sorted { $0.prefix < $1.prefix }
+    }
 
     var body: some View {
         NavigationStack {
             Group {
-                if isLoading && routes.isEmpty {
+                if isLoading && nodes.isEmpty {
                     ProgressView()
                 } else if let err = error {
                     ContentUnavailableView("Error", systemImage: "exclamationmark.triangle",
                                           description: Text(err))
                 } else if routes.isEmpty {
-                    ContentUnavailableView("No Routes", systemImage: "arrow.triangle.branch")
+                    ContentUnavailableView("No Routes", systemImage: "arrow.triangle.branch",
+                                          description: Text("No nodes are advertising routes."))
                 } else {
                     List(routes) { route in
-                        RouteRowView(api: api, route: route, onRefresh: load)
+                        RouteRowView(route: route)
                     }
                     .refreshable { await load() }
                 }
@@ -30,69 +43,29 @@ struct RoutesView: View {
 
     func load() async {
         isLoading = true; error = nil
-        do { routes = try await api.listRoutes() }
+        do { nodes = try await api.listNodes() }
         catch { self.error = error.localizedDescription }
         isLoading = false
     }
 }
 
 struct RouteRowView: View {
-    let api: HeadscaleAPI
-    let route: HeadscaleRoute
-    let onRefresh: () async -> Void
-    @State private var isWorking = false
-    @State private var showDelete = false
+    let route: RouteEntry
 
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(route.prefix).font(.headline).monospaced()
                 Text(route.node.displayName).font(.caption).foregroundStyle(.secondary)
-                HStack(spacing: 6) {
-                    badge("Advertised", active: route.advertised, color: .blue)
-                    badge("Enabled", active: route.enabled, color: .green)
-                    if route.isPrimary { badge("Primary", active: true, color: .orange) }
-                }
             }
             Spacer()
-            if isWorking {
-                ProgressView()
-            } else {
-                Menu {
-                    if !route.enabled {
-                        Button("Enable Route") { Task { await enable() } }
-                    }
-                    Button("Delete Route", role: .destructive) { showDelete = true }
-                } label: {
-                    Image(systemName: "ellipsis.circle").foregroundStyle(.secondary)
-                }
-            }
+            Label(route.approved ? "Approved" : "Pending",
+                  systemImage: route.approved ? "checkmark.circle.fill" : "clock.circle")
+                .font(.caption)
+                .foregroundStyle(route.approved ? .green : .orange)
+                .labelStyle(.iconOnly)
+                .font(.title2)
         }
         .padding(.vertical, 2)
-        .confirmationDialog("Delete route \(route.prefix)?", isPresented: $showDelete,
-                            titleVisibility: .visible) {
-            Button("Delete", role: .destructive) { Task { await deleteRoute() } }
-            Button("Cancel", role: .cancel) {}
-        }
-    }
-
-    func badge(_ label: String, active: Bool, color: Color) -> some View {
-        Text(label).font(.caption2)
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(active ? color.opacity(0.15) : Color.gray.opacity(0.1))
-            .foregroundStyle(active ? color : .gray)
-            .clipShape(Capsule())
-    }
-
-    func enable() async {
-        isWorking = true
-        do { try await api.enableRoute(route.id); await onRefresh() } catch {}
-        isWorking = false
-    }
-
-    func deleteRoute() async {
-        isWorking = true
-        do { try await api.deleteRoute(route.id); await onRefresh() } catch {}
-        isWorking = false
     }
 }

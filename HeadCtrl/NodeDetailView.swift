@@ -57,10 +57,29 @@ struct NodeDetailView: View {
                 }
             }
 
-            let allTags = node.validTags + node.forcedTags
-            if !allTags.isEmpty {
+            if !node.availableRoutes.isEmpty {
+                Section("Routes") {
+                    ForEach(node.availableRoutes, id: \.self) { prefix in
+                        HStack {
+                            Text(prefix).monospaced()
+                            Spacer()
+                            if node.approvedRoutes.contains(prefix) {
+                                Label("Approved", systemImage: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                    .labelStyle(.iconOnly)
+                            } else {
+                                Label("Pending", systemImage: "clock.circle")
+                                    .foregroundStyle(.orange)
+                                    .labelStyle(.iconOnly)
+                            }
+                        }
+                    }
+                }
+            }
+
+            if !node.tags.isEmpty {
                 Section("Tags") {
-                    ForEach(allTags, id: \.self) { Text($0) }
+                    ForEach(node.tags, id: \.self) { Text($0) }
                 }
             }
 
