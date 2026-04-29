@@ -84,11 +84,14 @@ struct NodeRowView: View {
                         .font(.caption).foregroundStyle(.red)
                 }
                 if !node.availableRoutes.isEmpty {
+                    let approved = node.approvedRoutes.count
+                    let total = node.availableRoutes.count
+                    let label = approved == total ? "\(total) routes" : "\(approved)/\(total) routes"
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.triangle.branch")
-                            .font(.caption2).foregroundStyle(.blue)
-                        Text("\(node.availableRoutes.count) route(s)")
-                            .font(.caption2).foregroundStyle(.blue)
+                            .font(.caption2).foregroundStyle(approved > 0 ? Color.blue : Color.secondary)
+                        Text(label)
+                            .font(.caption2).foregroundStyle(approved > 0 ? Color.blue : Color.secondary)
                     }
                 }
             }
