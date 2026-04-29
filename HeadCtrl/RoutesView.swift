@@ -9,10 +9,16 @@ struct RoutesView: View {
     var routes: [RouteEntry] {
         var entries: [RouteEntry] = []
         for node in nodes where !node.availableRoutes.isEmpty {
-            for prefix in node.availableRoutes {
-                let approved = node.approvedRoutes.contains(prefix)
+            let exitAvailable = node.availableRoutes.filter { $0 == "0.0.0.0/0" || $0 == "::/0" }
+            let subnets = node.availableRoutes.filter { $0 != "0.0.0.0/0" && $0 != "::/0" }
+            if !exitAvailable.isEmpty {
+                let approved = exitAvailable.contains { node.approvedRoutes.contains($0) }
+                entries.append(RouteEntry(id: "\(node.id)-exit", node: node,
+                                          prefix: "exit", approved: approved))
+            }
+            for prefix in subnets {
                 entries.append(RouteEntry(id: "\(node.id)-\(prefix)", node: node,
-                                          prefix: prefix, approved: approved))
+                                          prefix: prefix, approved: node.approvedRoutes.contains(prefix)))
             }
         }
         return entries.sorted { $0.prefix < $1.prefix }
@@ -69,7 +75,7 @@ struct RouteRowView: View {
     @State private var isWorking = false
     @State private var error: String?
 
-    var isExitNode: Bool { route.prefix == "0.0.0.0/0" || route.prefix == "::/0" }
+    var isExitNode: Bool { route.prefix == "exit" }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -79,10 +85,17 @@ struct RouteRowView: View {
                         Image(systemName: isExitNode ? "globe" : "network")
                             .foregroundStyle(isExitNode ? .purple : .blue)
                             .font(.caption)
-                        Text(route.prefix).font(.subheadline).monospaced()
+                        if isExitNode {
+                            Text("Exit Node").font(.subheadline)
+                        } else {
+                            Text(route.prefix).font(.subheadline).monospaced()
+                        }
                     }
-                    Text(isExitNode ? "Exit Node" : "Subnet Route")
-                        .font(.caption).foregroundStyle(.secondary)
+                    if isExitNode {
+                        Text("0.0.0.0/0, ::/0").font(.caption2).monospaced().foregroundStyle(.secondary)
+                    } else {
+                        Text("Subnet Route").font(.caption).foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
                 if isWorking {
@@ -110,7 +123,16 @@ struct RouteRowView: View {
     func toggle() async {
         guard let node = nodes.first(where: { $0.id == route.node.id }) else { return }
         var newSet = Set(node.approvedRoutes)
-        if newSet.contains(route.prefix) { newSet.remove(route.prefix) } else { newSet.insert(route.prefix) }
+        if isExitNode {
+            let exitRoutes = node.availableRoutes.filter { $0 == "0.0.0.0/0" || $0 == "::/0" }
+            let currentlyApproved = exitRoutes.contains { newSet.contains($0) }
+            for r in exitRoutes {
+                if currentlyApproved { newSet.remove(r) } else { newSet.insert(r) }
+            }
+        } else {
+            if newSet.contains(route.prefix) { newSet.remove(route.prefix) }
+            else { newSet.insert(route.prefix) }
+        }
         isWorking = true; error = nil
         do {
             let updated = try await api.approveRoutes(node.id, routes: Array(newSet).sorted())

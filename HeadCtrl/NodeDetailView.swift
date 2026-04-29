@@ -115,20 +115,46 @@ struct NodeDetailView: View {
     }
 
     var routesSection: some View {
-        Section {
-            ForEach(node.availableRoutes, id: \.self) { prefix in
+        let exitRoutes = node.availableRoutes.filter { $0 == "0.0.0.0/0" || $0 == "::/0" }
+        let subnetRoutes = node.availableRoutes.filter { $0 != "0.0.0.0/0" && $0 != "::/0" }
+        return Section {
+            if !exitRoutes.isEmpty {
+                let exitApproved = exitRoutes.contains { approvedRouteSet.contains($0) }
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Exit Node").font(.subheadline)
+                        Text(exitRoutes.sorted().joined(separator: ", "))
+                            .monospaced().font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { exitApproved },
+                        set: { newValue in
+                            let prev = approvedRouteSet
+                            for r in exitRoutes {
+                                if newValue { approvedRouteSet.insert(r) }
+                                else { approvedRouteSet.remove(r) }
+                            }
+                            Task { await syncRoutes(previousSet: prev) }
+                        }
+                    ))
+                    .labelsHidden()
+                }
+            }
+            ForEach(subnetRoutes, id: \.self) { prefix in
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(prefix).monospaced().font(.subheadline)
-                        Text(routeLabel(prefix)).font(.caption).foregroundStyle(.secondary)
+                        Text("Subnet Route").font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
                     Toggle("", isOn: Binding(
                         get: { approvedRouteSet.contains(prefix) },
                         set: { newValue in
+                            let prev = approvedRouteSet
                             if newValue { approvedRouteSet.insert(prefix) }
                             else { approvedRouteSet.remove(prefix) }
-                            Task { await syncRoutes(revertPrefix: prefix, revertTo: !newValue) }
+                            Task { await syncRoutes(previousSet: prev) }
                         }
                     ))
                     .labelsHidden()
@@ -170,16 +196,14 @@ struct NodeDetailView: View {
         return "Subnet"
     }
 
-    func syncRoutes(revertPrefix: String, revertTo: Bool) async {
+    func syncRoutes(previousSet: Set<String>) async {
         isWorking = true; error = nil
         do {
             let updated = try await api.approveRoutes(node.id, routes: Array(approvedRouteSet).sorted())
             node = updated
             approvedRouteSet = Set(updated.approvedRoutes)
         } catch {
-            // Revert optimistic update on failure
-            if revertTo { approvedRouteSet.insert(revertPrefix) }
-            else { approvedRouteSet.remove(revertPrefix) }
+            approvedRouteSet = previousSet
             self.error = error.localizedDescription
         }
         isWorking = false
