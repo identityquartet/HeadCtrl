@@ -125,7 +125,11 @@ struct NodeDetailView: View {
                     Spacer()
                     Toggle("", isOn: Binding(
                         get: { approvedRouteSet.contains(prefix) },
-                        set: { _ in Task { await toggleRoute(prefix) } }
+                        set: { newValue in
+                            if newValue { approvedRouteSet.insert(prefix) }
+                            else { approvedRouteSet.remove(prefix) }
+                            Task { await syncRoutes(revertPrefix: prefix, revertTo: !newValue) }
+                        }
                     ))
                     .labelsHidden()
                 }
@@ -166,15 +170,16 @@ struct NodeDetailView: View {
         return "Subnet"
     }
 
-    func toggleRoute(_ prefix: String) async {
-        var newSet = approvedRouteSet
-        if newSet.contains(prefix) { newSet.remove(prefix) } else { newSet.insert(prefix) }
+    func syncRoutes(revertPrefix: String, revertTo: Bool) async {
         isWorking = true; error = nil
         do {
-            let updated = try await api.approveRoutes(node.id, routes: Array(newSet).sorted())
+            let updated = try await api.approveRoutes(node.id, routes: Array(approvedRouteSet).sorted())
             node = updated
             approvedRouteSet = Set(updated.approvedRoutes)
         } catch {
+            // Revert optimistic update on failure
+            if revertTo { approvedRouteSet.insert(revertPrefix) }
+            else { approvedRouteSet.remove(revertPrefix) }
             self.error = error.localizedDescription
         }
         isWorking = false
