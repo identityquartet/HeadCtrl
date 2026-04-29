@@ -18,6 +18,8 @@
 		FF000000000000000000009 /* RoutesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000024 /* RoutesView.swift */; };
 		FF000000000000000000010 /* APIKeysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000025 /* APIKeysView.swift */; };
 		FF000000000000000000011 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000026 /* SettingsView.swift */; };
+		FF000000000000000000012 /* KeysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000028 /* KeysView.swift */; };
+		FF000000000000000000013 /* PreAuthKeysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000029 /* PreAuthKeysView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +36,8 @@
 		FF000000000000000000025 /* APIKeysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeysView.swift; sourceTree = "<group>"; };
 		FF000000000000000000026 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		FF000000000000000000027 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		FF000000000000000000028 /* KeysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeysView.swift; sourceTree = "<group>"; };
+		FF000000000000000000029 /* PreAuthKeysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreAuthKeysView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +72,8 @@
 				FF000000000000000000024 /* RoutesView.swift */,
 				FF000000000000000000025 /* APIKeysView.swift */,
 				FF000000000000000000026 /* SettingsView.swift */,
+				FF000000000000000000028 /* KeysView.swift */,
+				FF000000000000000000029 /* PreAuthKeysView.swift */,
 				FF000000000000000000018 /* Assets.xcassets */,
 				FF000000000000000000027 /* Info.plist */,
 			);
@@ -161,6 +167,8 @@
 				FF000000000000000000009 /* RoutesView.swift in Sources */,
 				FF000000000000000000010 /* APIKeysView.swift in Sources */,
 				FF000000000000000000011 /* SettingsView.swift in Sources */,
+				FF000000000000000000012 /* KeysView.swift in Sources */,
+				FF000000000000000000013 /* PreAuthKeysView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

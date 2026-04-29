@@ -14,8 +14,8 @@ struct ContentView: View {
                     .tabItem { Label("Users", systemImage: "person.2") }
                 RoutesView(api: api)
                     .tabItem { Label("Routes", systemImage: "arrow.triangle.branch") }
-                APIKeysView(api: api)
-                    .tabItem { Label("API Keys", systemImage: "key") }
+                KeysView(api: api)
+                    .tabItem { Label("Keys", systemImage: "key") }
                 SettingsView(api: api, isInitialSetup: false)
                     .tabItem { Label("Settings", systemImage: "gear") }
             }

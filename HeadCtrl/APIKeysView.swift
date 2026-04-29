@@ -10,27 +10,24 @@ struct APIKeysView: View {
     @State private var showNewKey = false
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if isLoading && keys.isEmpty {
-                    ProgressView()
-                } else if let err = error {
-                    ContentUnavailableView("Error", systemImage: "exclamationmark.triangle",
-                                          description: Text(err))
-                } else if keys.isEmpty {
-                    ContentUnavailableView("No API Keys", systemImage: "key.slash")
-                } else {
-                    List(keys) { key in
-                        APIKeyRowView(api: api, key: key, onRefresh: load)
-                    }
-                    .refreshable { await load() }
+        Group {
+            if isLoading && keys.isEmpty {
+                ProgressView()
+            } else if let err = error {
+                ContentUnavailableView("Error", systemImage: "exclamationmark.triangle",
+                                       description: Text(err))
+            } else if keys.isEmpty {
+                ContentUnavailableView("No API Keys", systemImage: "key.slash")
+            } else {
+                List(keys) { key in
+                    APIKeyRowView(api: api, key: key, onRefresh: load)
                 }
+                .refreshable { await load() }
             }
-            .navigationTitle("API Keys")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Add", systemImage: "plus") { showCreate = true }
-                }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Add", systemImage: "plus") { showCreate = true }
             }
         }
         .task { await load() }
@@ -46,7 +43,7 @@ struct APIKeysView: View {
             Button("Copy to Clipboard") { UIPasteboard.general.string = newKeyResult }
             Button("Done", role: .cancel) {}
         } message: { key in
-            Text("Copy this key now — it won't be shown again.\n\n\(key)")
+            Text("Copy this key now — it won\'t be shown again.\n\n\(key)")
         }
     }
 
@@ -65,7 +62,7 @@ struct CreateAPIKeySheet: View {
     @State private var hasExpiry = true
     @State private var isCreating = false
     @State private var error: String?
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\..dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -122,6 +119,10 @@ struct APIKeyRowView: View {
                     .font(.caption).foregroundStyle(key.isExpired ? .red : .secondary)
             } else {
                 Text("No expiry").font(.caption).foregroundStyle(.secondary)
+            }
+            if let created = key.createdAt, let date = created.headscaleDate() {
+                Text("Created \(date.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption2).foregroundStyle(.secondary)
             }
         }
         .swipeActions(edge: .trailing) {

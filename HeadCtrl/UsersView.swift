@@ -21,7 +21,7 @@ struct UsersView: View {
                 } else {
                     List {
                         ForEach(users) { user in
-                            UserRowView(api: api, user: user, onDelete: load)
+                            UserRowView(api: api, user: user, onRefresh: load)
                         }
                     }
                     .refreshable { await load() }
@@ -63,19 +63,26 @@ struct UsersView: View {
 struct UserRowView: View {
     let api: HeadscaleAPI
     let user: HeadscaleUser
-    let onDelete: () async -> Void
+    let onRefresh: () async -> Void
     @State private var showDelete = false
+    @State private var showRename = false
+    @State private var renameText = ""
 
     var body: some View {
         HStack {
             Image(systemName: "person.circle").font(.title2).foregroundStyle(.blue)
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(user.name).font(.headline)
-                if let created = user.createdAt, let date = parseDate(created) {
+                Text("ID: \(user.id)").font(.caption).foregroundStyle(.tertiary)
+                if let created = user.createdAt, let date = created.headscaleDate() {
                     Text("Created \(date.formatted(date: .abbreviated, time: .omitted))")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
+        }
+        .swipeActions(edge: .leading) {
+            Button("Rename") { renameText = user.name; showRename = true }
+                .tint(.blue)
         }
         .swipeActions(edge: .trailing) {
             Button("Delete", role: .destructive) { showDelete = true }
@@ -84,15 +91,22 @@ struct UserRowView: View {
             Button("Delete", role: .destructive) { Task { await delete() } }
             Button("Cancel", role: .cancel) {}
         }
+        .alert("Rename User", isPresented: $showRename) {
+            TextField("Username", text: $renameText)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+            Button("Rename") { Task { await rename() } }
+            Button("Cancel", role: .cancel) {}
+        }
     }
 
     func delete() async {
-        do { try await api.deleteUser(name: user.name); await onDelete() } catch {}
+        do { try await api.deleteUser(name: user.name); await onRefresh() } catch {}
     }
 
-    func parseDate(_ str: String) -> Date? {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f.date(from: str) ?? ISO8601DateFormatter().date(from: str)
+    func rename() async {
+        let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        do { _ = try await api.renameUser(userId: user.id, newName: name); await onRefresh() } catch {}
     }
 }

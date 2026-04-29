@@ -8,6 +8,8 @@ struct SettingsView: View {
     @State private var isTesting = false
     @State private var testResult: Bool?
     @State private var testError: String?
+    @State private var nodeCount: Int?
+    @State private var userCount: Int?
 
     var body: some View {
         NavigationStack {
@@ -45,7 +47,7 @@ struct SettingsView: View {
                     Section {
                         HStack {
                             ProgressView()
-                            Text("Testing connection...").foregroundStyle(.secondary)
+                            Text("Testing connection…").foregroundStyle(.secondary)
                         }
                     }
                 } else if let result = testResult {
@@ -53,11 +55,20 @@ struct SettingsView: View {
                         if result {
                             Label("Connection successful", systemImage: "checkmark.circle.fill")
                                 .foregroundStyle(.green)
+                            if let nc = nodeCount, let uc = userCount {
+                                LabeledContent("Nodes", value: "\(nc)")
+                                LabeledContent("Users", value: "\(uc)")
+                            }
                         } else {
                             Label(testError ?? "Connection failed", systemImage: "xmark.circle.fill")
                                 .foregroundStyle(.red)
                         }
                     }
+                }
+
+                Section("About") {
+                    LabeledContent("Server", value: api.serverURL.isEmpty ? "Not configured" : api.serverURL)
+                    LabeledContent("API Version", value: "v1")
                 }
             }
             .navigationTitle(isInitialSetup ? "Setup" : "Settings")
@@ -84,14 +95,28 @@ struct SettingsView: View {
         guard let reqURL = URL(string: "\(url)/api/v1/node") else {
             testResult = false; testError = "Invalid URL"; return
         }
-        isTesting = true; testResult = nil; testError = nil
+        isTesting = true; testResult = nil; testError = nil; nodeCount = nil; userCount = nil
         var req = URLRequest(url: reqURL)
         req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         do {
-            let (_, response) = try await URLSession.shared.data(for: req)
+            let (data, response) = try await URLSession.shared.data(for: req)
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-            testResult = (200...299).contains(code)
-            if testResult == false { testError = "Server returned HTTP \(code)" }
+            if (200...299).contains(code) {
+                testResult = true
+                if let decoded = try? JSONDecoder().decode(NodeListResponse.self, from: data) {
+                    nodeCount = decoded.nodes.count
+                }
+                if let userURL = URL(string: "\(url)/api/v1/user") {
+                    var ureq = URLRequest(url: userURL)
+                    ureq.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+                    if let (udata, _) = try? await URLSession.shared.data(for: ureq),
+                       let decoded = try? JSONDecoder().decode(UserListResponse.self, from: udata) {
+                        userCount = decoded.users.count
+                    }
+                }
+            } else {
+                testResult = false; testError = "Server returned HTTP \(code)"
+            }
         } catch {
             testResult = false; testError = error.localizedDescription
         }
