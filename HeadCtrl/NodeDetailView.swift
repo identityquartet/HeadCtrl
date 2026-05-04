@@ -13,7 +13,7 @@ struct NodeDetailView: View {
     @State private var showTags = false
     @State private var tagsText = ""
     @State private var approvedRouteSet: Set<String> = []
-    @Environment(\..dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         List {
@@ -21,7 +21,7 @@ struct NodeDetailView: View {
             networkSection
             expirySection
             if !node.availableRoutes.isEmpty { routesSection }
-            if !node.tags.isEmpty || true { tagsSection }
+            tagsSection
             if let err = error {
                 Section {
                     Label(err, systemImage: "exclamationmark.triangle").foregroundStyle(.red)

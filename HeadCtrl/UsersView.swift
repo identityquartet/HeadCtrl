@@ -67,6 +67,8 @@ struct UserRowView: View {
     @State private var showDelete = false
     @State private var showRename = false
     @State private var renameText = ""
+    @State private var error: String?
+    @State private var showError = false
 
     var body: some View {
         HStack {
@@ -98,15 +100,22 @@ struct UserRowView: View {
             Button("Rename") { Task { await rename() } }
             Button("Cancel", role: .cancel) {}
         }
+        .alert("Error", isPresented: $showError, presenting: error) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { err in
+            Text(err)
+        }
     }
 
     func delete() async {
-        do { try await api.deleteUser(name: user.name); await onRefresh() } catch {}
+        do { try await api.deleteUser(name: user.name); await onRefresh() }
+        catch { self.error = error.localizedDescription; showError = true }
     }
 
     func rename() async {
         let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
-        do { _ = try await api.renameUser(userId: user.id, newName: name); await onRefresh() } catch {}
+        do { _ = try await api.renameUser(userId: user.id, newName: name); await onRefresh() }
+        catch { self.error = error.localizedDescription; showError = true }
     }
 }

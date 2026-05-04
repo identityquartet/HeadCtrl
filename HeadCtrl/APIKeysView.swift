@@ -62,7 +62,7 @@ struct CreateAPIKeySheet: View {
     @State private var hasExpiry = true
     @State private var isCreating = false
     @State private var error: String?
-    @Environment(\..dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -103,6 +103,8 @@ struct APIKeyRowView: View {
     let key: HeadscaleAPIKey
     let onRefresh: () async -> Void
     @State private var showExpire = false
+    @State private var error: String?
+    @State private var showError = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -135,9 +137,15 @@ struct APIKeyRowView: View {
             Button("Expire", role: .destructive) { Task { await expire() } }
             Button("Cancel", role: .cancel) {}
         }
+        .alert("Error", isPresented: $showError, presenting: error) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { err in
+            Text(err)
+        }
     }
 
     func expire() async {
-        do { try await api.expireAPIKey(prefix: key.prefix); await onRefresh() } catch {}
+        do { try await api.expireAPIKey(prefix: key.prefix); await onRefresh() }
+        catch { self.error = error.localizedDescription; showError = true }
     }
 }

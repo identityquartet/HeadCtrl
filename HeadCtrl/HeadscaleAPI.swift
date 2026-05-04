@@ -6,12 +6,20 @@ class HeadscaleAPI {
         didSet { UserDefaults.standard.set(serverURL, forKey: "headctrl.serverURL") }
     }
     var apiKey: String {
-        didSet { UserDefaults.standard.set(apiKey, forKey: "headctrl.apiKey") }
+        didSet { Keychain.write(apiKey, account: "headctrl.apiKey") }
     }
 
     init() {
         serverURL = UserDefaults.standard.string(forKey: "headctrl.serverURL") ?? "https://hs.blacktank.org"
-        apiKey = UserDefaults.standard.string(forKey: "headctrl.apiKey") ?? ""
+        if let stored = Keychain.read("headctrl.apiKey") {
+            apiKey = stored
+        } else if let legacy = UserDefaults.standard.string(forKey: "headctrl.apiKey"), !legacy.isEmpty {
+            apiKey = legacy
+            Keychain.write(legacy, account: "headctrl.apiKey")
+            UserDefaults.standard.removeObject(forKey: "headctrl.apiKey")
+        } else {
+            apiKey = ""
+        }
     }
 
     private func request(_ path: String, method: String = "GET", body: Data? = nil) async throws -> Data {

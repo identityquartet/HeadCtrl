@@ -182,7 +182,7 @@ struct CreatePreAuthKeySheet: View {
     @State private var aclTagsText = ""
     @State private var isCreating = false
     @State private var error: String?
-    @Environment(\..dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
