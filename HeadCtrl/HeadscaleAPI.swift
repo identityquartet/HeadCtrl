@@ -39,6 +39,19 @@ class HeadscaleAPI {
         return data
     }
 
+    @discardableResult
+    private func recorded<T>(_ action: ActivityAction, target: String, detail: String? = nil,
+                             _ work: () async throws -> T) async throws -> T {
+        do {
+            let result = try await work()
+            ActivityLog.shared.record(action, target: target, detail: detail)
+            return result
+        } catch {
+            ActivityLog.shared.record(action, target: target, detail: detail, error: error)
+            throw error
+        }
+    }
+
     // MARK: - Nodes
     func listNodes() async throws -> [HeadscaleNode] {
         try JSONDecoder().decode(NodeListResponse.self, from: try await request("/node")).nodes
@@ -47,29 +60,43 @@ class HeadscaleAPI {
         try JSONDecoder().decode(NodeResponse.self, from: try await request("/node/\(id)")).node
     }
     func deleteNode(_ id: String) async throws {
-        _ = try await request("/node/\(id)", method: "DELETE")
+        try await recorded(.deleteNode, target: "node \(id)") {
+            _ = try await request("/node/\(id)", method: "DELETE")
+        }
     }
     func expireNode(_ id: String) async throws {
-        _ = try await request("/node/\(id)/expire", method: "POST")
+        try await recorded(.expireNode, target: "node \(id)") {
+            _ = try await request("/node/\(id)/expire", method: "POST")
+        }
     }
     func renameNode(_ id: String, newName: String) async throws -> HeadscaleNode {
-        try JSONDecoder().decode(NodeResponse.self,
-            from: try await request("/node/\(id)/rename/\(newName)", method: "POST")).node
+        try await recorded(.renameNode, target: "node \(id)", detail: "→ \(newName)") {
+            try JSONDecoder().decode(NodeResponse.self,
+                from: try await request("/node/\(id)/rename/\(newName)", method: "POST")).node
+        }
     }
     func setNodeTags(_ id: String, tags: [String]) async throws -> HeadscaleNode {
         let body = try JSONSerialization.data(withJSONObject: ["tags": tags])
-        return try JSONDecoder().decode(NodeResponse.self,
-            from: try await request("/node/\(id)/tags", method: "POST", body: body)).node
+        let detail = tags.isEmpty ? "(cleared)" : tags.joined(separator: ", ")
+        return try await recorded(.setNodeTags, target: "node \(id)", detail: detail) {
+            try JSONDecoder().decode(NodeResponse.self,
+                from: try await request("/node/\(id)/tags", method: "POST", body: body)).node
+        }
     }
     func approveRoutes(_ nodeId: String, routes: [String]) async throws -> HeadscaleNode {
         let body = try JSONSerialization.data(withJSONObject: ["routes": routes])
-        return try JSONDecoder().decode(NodeResponse.self,
-            from: try await request("/node/\(nodeId)/approve_routes", method: "POST", body: body)).node
+        let detail = routes.isEmpty ? "(none approved)" : "\(routes.count) approved: \(routes.joined(separator: ", "))"
+        return try await recorded(.approveRoutes, target: "node \(nodeId)", detail: detail) {
+            try JSONDecoder().decode(NodeResponse.self,
+                from: try await request("/node/\(nodeId)/approve_routes", method: "POST", body: body)).node
+        }
     }
     func registerNode(userId: String, nodeKey: String) async throws -> HeadscaleNode {
         let key = nodeKey.hasPrefix("nodekey:") ? nodeKey : "nodekey:\(nodeKey)"
-        return try JSONDecoder().decode(NodeResponse.self,
-            from: try await request("/node/register?user=\(userId)&key=\(key)", method: "POST")).node
+        return try await recorded(.registerNode, target: "user \(userId)") {
+            try JSONDecoder().decode(NodeResponse.self,
+                from: try await request("/node/register?user=\(userId)&key=\(key)", method: "POST")).node
+        }
     }
 
     // MARK: - Users
@@ -78,15 +105,21 @@ class HeadscaleAPI {
     }
     func createUser(name: String) async throws -> HeadscaleUser {
         let body = try JSONSerialization.data(withJSONObject: ["name": name])
-        return try JSONDecoder().decode(UserResponse.self,
-            from: try await request("/user", method: "POST", body: body)).user
+        return try await recorded(.createUser, target: name) {
+            try JSONDecoder().decode(UserResponse.self,
+                from: try await request("/user", method: "POST", body: body)).user
+        }
     }
     func deleteUser(name: String) async throws {
-        _ = try await request("/user/\(name)", method: "DELETE")
+        try await recorded(.deleteUser, target: name) {
+            _ = try await request("/user/\(name)", method: "DELETE")
+        }
     }
     func renameUser(userId: String, newName: String) async throws -> HeadscaleUser {
-        return try JSONDecoder().decode(UserResponse.self,
-            from: try await request("/user/\(userId)/rename/\(newName)", method: "POST")).user
+        try await recorded(.renameUser, target: "user \(userId)", detail: "→ \(newName)") {
+            try JSONDecoder().decode(UserResponse.self,
+                from: try await request("/user/\(userId)/rename/\(newName)", method: "POST")).user
+        }
     }
 
     // MARK: - Pre-Auth Keys
@@ -113,12 +146,21 @@ class HeadscaleAPI {
             body["expiration"] = f.string(from: exp)
         }
         let bodyData = try JSONSerialization.data(withJSONObject: body)
-        return try JSONDecoder().decode(PreAuthKeyResponse.self,
-            from: try await request("/preauthkey", method: "POST", body: bodyData)).preAuthKey
+        var flags: [String] = []
+        if reusable { flags.append("reusable") }
+        if ephemeral { flags.append("ephemeral") }
+        if !aclTags.isEmpty { flags.append("tags: \(aclTags.joined(separator: ","))") }
+        let detail = flags.isEmpty ? nil : flags.joined(separator: ", ")
+        return try await recorded(.createPreAuthKey, target: "user \(userId)", detail: detail) {
+            try JSONDecoder().decode(PreAuthKeyResponse.self,
+                from: try await request("/preauthkey", method: "POST", body: bodyData)).preAuthKey
+        }
     }
     func expirePreAuthKey(key: HeadscalePreAuthKey) async throws {
         let body = try JSONSerialization.data(withJSONObject: ["user": key.user.id, "key": key.key])
-        _ = try await request("/preauthkey", method: "DELETE", body: body)
+        try await recorded(.expirePreAuthKey, target: key.user.name, detail: String(key.key.prefix(12)) + "…") {
+            _ = try await request("/preauthkey", method: "DELETE", body: body)
+        }
     }
 
     // MARK: - API Keys
@@ -127,17 +169,25 @@ class HeadscaleAPI {
     }
     func createAPIKey(expiration: Date?) async throws -> String {
         var body: [String: Any] = [:]
+        var detail: String?
         if let exp = expiration {
             let f = ISO8601DateFormatter()
             f.formatOptions = [.withInternetDateTime]
             body["expiration"] = f.string(from: exp)
+            detail = "expires \(exp.formatted(date: .abbreviated, time: .omitted))"
+        } else {
+            detail = "no expiry"
         }
         let bodyData = try JSONSerialization.data(withJSONObject: body)
-        return try JSONDecoder().decode(APIKeyCreateResponse.self,
-            from: try await request("/apikey", method: "POST", body: bodyData)).apiKey
+        return try await recorded(.createAPIKey, target: "new key", detail: detail) {
+            try JSONDecoder().decode(APIKeyCreateResponse.self,
+                from: try await request("/apikey", method: "POST", body: bodyData)).apiKey
+        }
     }
     func expireAPIKey(prefix: String) async throws {
         let body = try JSONSerialization.data(withJSONObject: ["prefix": prefix])
-        _ = try await request("/apikey/expire", method: "POST", body: body)
+        try await recorded(.expireAPIKey, target: prefix) {
+            _ = try await request("/apikey/expire", method: "POST", body: body)
+        }
     }
 }

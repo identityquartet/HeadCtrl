@@ -66,6 +66,16 @@ struct SettingsView: View {
                     }
                 }
 
+                if !isInitialSetup {
+                    Section {
+                        NavigationLink {
+                            ActivityView()
+                        } label: {
+                            Label("Activity Log", systemImage: "list.bullet.clipboard")
+                        }
+                    }
+                }
+
                 Section("About") {
                     LabeledContent("Server", value: api.serverURL.isEmpty ? "Not configured" : api.serverURL)
                     LabeledContent("API Version", value: "v1")

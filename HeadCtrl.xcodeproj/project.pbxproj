@@ -21,6 +21,8 @@
 		FF000000000000000000012 /* KeysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000028 /* KeysView.swift */; };
 		FF000000000000000000013 /* PreAuthKeysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000029 /* PreAuthKeysView.swift */; };
 		FF000000000000000000014 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000033 /* Keychain.swift */; };
+		FF000000000000000000034 /* ActivityLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000035 /* ActivityLog.swift */; };
+		FF000000000000000000036 /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF000000000000000000037 /* ActivityView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +42,8 @@
 		FF000000000000000000028 /* KeysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeysView.swift; sourceTree = "<group>"; };
 		FF000000000000000000029 /* PreAuthKeysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreAuthKeysView.swift; sourceTree = "<group>"; };
 		FF000000000000000000033 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
+		FF000000000000000000035 /* ActivityLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLog.swift; sourceTree = "<group>"; };
+		FF000000000000000000037 /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +73,8 @@
 				FF000000000000000000019 /* Models.swift */,
 				FF000000000000000000020 /* HeadscaleAPI.swift */,
 				FF000000000000000000033 /* Keychain.swift */,
+				FF000000000000000000035 /* ActivityLog.swift */,
+				FF000000000000000000037 /* ActivityView.swift */,
 				FF000000000000000000021 /* NodesView.swift */,
 				FF000000000000000000022 /* NodeDetailView.swift */,
 				FF000000000000000000023 /* UsersView.swift */,
@@ -165,6 +171,8 @@
 				FF000000000000000000004 /* Models.swift in Sources */,
 				FF000000000000000000005 /* HeadscaleAPI.swift in Sources */,
 				FF000000000000000000014 /* Keychain.swift in Sources */,
+				FF000000000000000000034 /* ActivityLog.swift in Sources */,
+				FF000000000000000000036 /* ActivityView.swift in Sources */,
 				FF000000000000000000006 /* NodesView.swift in Sources */,
 				FF000000000000000000007 /* NodeDetailView.swift in Sources */,
 				FF000000000000000000008 /* UsersView.swift in Sources */,
